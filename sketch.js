@@ -10,8 +10,8 @@ let fail
 let loading
 let lottie;
 let isLoading = true
-let prevLoc
-let prevSize
+let prevLoc = [0,0]
+let prevSize = 0
 
 let scaleLottie = 2.5
 let failedData
@@ -25,6 +25,8 @@ function preload() {
   bg = loadImage('background.jpg');
   loadingData = loadJSON('loading.json')
   failedData = loadJSON('failed.json')
+  
+  pixelDensity(1);
 }
 
 function setup() {
@@ -81,12 +83,12 @@ function draw() {
       text("Loading machine learning model...", width/2, height/2 + height/10)
     }
   
-  image(video, 0, 0);
+  image(video, 0, 0, width, height);
   
   let facePos
 
   faceapi.detect(video, (err, results) => {
-    if (results.length == 0) { 
+    if (!results || results.length == 0) {
       failedLottie.position(prevLoc[0], prevLoc[1]);
       failedLottie.size(prevSize,prevSize)
       return
@@ -99,8 +101,8 @@ function draw() {
      let eyeL = results[0].parts.leftEye;
      let d = dist(eyeR[0].x, eyeR[0].y, eyeL[eyeL.length-1].x, eyeL[eyeL.length-1].y);
     
-    const size = d*scaleLottie
-    prevSize = size
+    const size = d
+    prevSize = size * 10
     const midX = (eyeR[0].x + eyeL[eyeL.length-1].x)/2 -(size/2)
     const midY = (eyeR[0].y + eyeL[eyeL.length-1].y)/2 -(size/2)+ 10
      
@@ -109,13 +111,13 @@ function draw() {
         // y: (eyeR[0].y + eyeL[eyeL.length-1].y)/2,
        x: results[0].parts.nose[0].x,
         y: results[0].parts.nose[0].y,
-        size: size
+        size: size*2.5
      }
       
-     const maskArr = createMask(video, [facePos.x, facePos.y+50], bounds, size)
+     const maskArr = createMask(video, [facePos.x, facePos.y+50], bounds, size*scaleLottie)
      mask(bg, maskArr)
       
-     prevLoc = [midX, midY]
+     prevLoc = [facePos.x, facePos.y+50]
       const csize = min(width, height)/10
   const zoomPos = {
     x: width - csize,
@@ -169,7 +171,8 @@ function isIntersect(o1, o2) {
   
 function createMask(img, area, bounds, size) {
   let maskArr = []
-  image (img, 0, 0, width, height);
+  image(img, 0, 0, width, height);
+  
   loadPixels()
   
   const reducer = (accumulator, currentValue) => accumulator + currentValue;
@@ -199,7 +202,13 @@ function createMask(img, area, bounds, size) {
 }
 
 function mask(img, maskArr) {
+  // push();
+  //     translate(width, height);
+  //     scale(-1,1);
+  //     image(img, 0, 0, width, height);
+  //   pop(); 
   image(img, 0, 0, width, height);
+  
   loadPixels()
   for (let i = 0; i < width; i++) {
     for (let j = 0; j < height; j++) {
@@ -237,11 +246,11 @@ function zoom(isZoom) {
   scaleLottie = isZoom ? min(10,scaleLottie*2) : max(2.5, scaleLottie/2)
 }
   
-  function isIntersect(o1, o2) {
+function isIntersect(o1, o2) {
     let distSq = (o1.x - o2.x) * (o1.x - o2.x) + 
                  (o1.y - o2.y) * (o1.y - o2.y); 
     let radSumSq = (o1.size/2 + o2.size/2) * 
         (o1.size/2 + o2.size/2); 
     let res = distSq > radSumSq
     return !res 
-  }
+}
