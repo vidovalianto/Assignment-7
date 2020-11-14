@@ -19,6 +19,8 @@ let loadingData
 let animData
 let bg;
 
+let bounds = 85
+
 function preload() {
   bg = loadImage('background.jpg');
   loadingData = loadJSON('loading.json')
@@ -110,7 +112,7 @@ function draw() {
         size: size
      }
       
-     const maskArr = createMask(video, [facePos.x, facePos.y+50], 85, size)
+     const maskArr = createMask(video, [facePos.x, facePos.y+50], bounds, size)
      mask(bg, maskArr)
       
      prevLoc = [midX, midY]
@@ -169,6 +171,9 @@ function createMask(img, area, bounds, size) {
   let maskArr = []
   image (img, 0, 0, width, height);
   loadPixels()
+  
+  const reducer = (accumulator, currentValue) => accumulator + currentValue;
+  let boundArr = []
   for (let i = 0; i < width; i++) {
     let row = []
 
@@ -176,11 +181,19 @@ function createMask(img, area, bounds, size) {
       const distance = dist(area[0], area[1], i, j)
       const idx = getIndex(i,j)
       let avg = (pixels[idx] + pixels[idx+1] + pixels[idx+2])/3
-      row.push(distance <= size && avg > bounds ? 1 : 0)
+      if (distance <= size) {
+        boundArr.push(avg)
+        row.push(avg > bounds ? 1 : 0)
+      }
     }
     
     maskArr.push(row)
   }
+  
+  const len = boundArr.length
+  // print(boundArr.reduce(reducer),len)
+  //boundArr.reduce(reducer)/len
+  bounds = boundArr.reduce(reducer)/len
   
   return maskArr
 }
